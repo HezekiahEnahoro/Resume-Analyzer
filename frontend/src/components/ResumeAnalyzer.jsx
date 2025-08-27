@@ -26,7 +26,7 @@ function ResumeAnalyzer() {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/analyze",
+        "https://resume-analyzer-1-cqyf.onrender.com/analyze",
         formData,
         {
           headers: {
@@ -82,7 +82,14 @@ function ResumeAnalyzer() {
             <strong>📧 Email:</strong> {analysis.email || "N/A"}
           </p>
           <p>
+            <strong>🛠 Phone:</strong> {analysis.phone?.join(", ") || "N/A"}
+          </p>
+          <p>
             <strong>🛠 Skills:</strong> {analysis.skills?.join(", ") || "N/A"}
+          </p>
+          <p>
+            <strong>🛠 Education:</strong>{" "}
+            {analysis.education?.join(", ") || "N/A"}
           </p>
           <p>
             <strong>📈 Years of Experience:</strong>{" "}
