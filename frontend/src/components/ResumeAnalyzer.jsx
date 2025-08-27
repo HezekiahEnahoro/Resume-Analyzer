@@ -88,11 +88,11 @@ function ResumeAnalyzer() {
             <strong>🛠 Skills:</strong> {analysis.skills?.join(", ") || "N/A"}
           </p>
           <p>
-            <strong>🛠 Education:</strong>{" "}
-            {analysis.education?.join(", ") || "N/A"}
+            <strong>🛠 Education:</strong>
+            {analysis.education?.map((e) => e.text).join(", ") || "N/A"}
           </p>
           <p>
-            <strong>📈 Years of Experience:</strong>{" "}
+            <strong>📈 Years of Experience:</strong>
             {analysis.experience_years || "N/A"}
           </p>
           <p>
