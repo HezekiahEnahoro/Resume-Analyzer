@@ -1,7 +1,16 @@
-Flask==3.0.0
-flask-cors==4.0.0
-PyMuPDF==1.24.0
-python-docx==1.1.0
-spacy==3.7.2
-gunicorn==21.2.0
-numpy==1.26.2
+# Web
+Flask>=3.0
+flask-cors>=4.0
+gunicorn>=21.2
+
+# Document parsing
+PyMuPDF>=1.24        # provides 'fitz'
+python-docx>=1.1
+
+# Lightweight NLP helpers (all have wheels)
+rapidfuzz>=3.9       # fuzzy matching for skills/keywords
+dateparser>=1.2      # robust date parsing from text
+phonenumbers>=8.13   # international phone parsing/formatting
+
+# Utils
+regex>=2024.5.15
