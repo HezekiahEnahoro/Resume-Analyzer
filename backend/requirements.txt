@@ -6,6 +6,8 @@ Werkzeug>=3.0
 
 # NLP and parsing
 spacy>=3.7.5
+thinc==8.2.4
+blis==0.7.11
 phonenumbers>=8.13
 rapidfuzz>=3.9
 regex>=2023.12
