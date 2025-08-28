@@ -1,141 +1,156 @@
-# resume_utils.py
+# util.py
 import re
+import spacy
 import phonenumbers
-from rapidfuzz import fuzz, process
-import dateparser
+from typing import List, Dict, Tuple, Optional
 
-EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-URL_RE = re.compile(r"(https?://[^\s)]+)")
-# very loose name guess: first non-empty line with at least a space (Two Words)
-NAME_RE = re.compile(r"^[A-Za-z][A-Za-z\-\.' ]{2,}[ ]+[A-Za-z\-\.' ]{2,}$")
+# ---- Safe spaCy model load ----
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    # Optional: auto-download in dev; comment this out if your host blocks downloads
+    from spacy.cli import download
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 
+JOB_ROLES: Dict[str, List[str]] = {
+    "Data Analyst": ["Python", "Pandas", "NumPy", "SQL", "Tableau", "Excel"],
+    "Frontend Developer": ["JavaScript", "React", "HTML", "CSS", "Tailwind", "Redux"],
+    "Backend Developer": ["Python", "Flask", "Django", "Node", "PostgreSQL", "APIs"],
+}
+
+# Degree keywords (tune to your audience)
 DEGREE_WORDS = [
     "bachelor", "master", "phd", "ph.d", "msc", "m.sc", "bsc", "b.sc", "mba",
-    "b.eng", "btech", "b.tech", "m.eng", "mtech", "m.tech", "associate", "diploma"
-]
-SKILL_BANK = [
-    # add to taste
-    "python","javascript","typescript","react","next.js","node.js","flask","fastapi",
-    "django","postgresql","mysql","mongodb","redis",
-    "aws","gcp","azure","docker","kubernetes","terraform",
-    "pandas","numpy","scikit-learn","pytorch","tensorflow","nlp",
-    "html","css","tailwind","vite","git","github","ci/cd","linux"
+    "b.eng", "btech", "b.tech", "m.eng", "mtech", "m.tech", "associate", "diploma",
+    "computer science", "data science", "software engineering", "information technology",
 ]
 
-def _clean_lines(text: str):
+# Simple skill bank used for detection (extend as needed)
+SKILLS_KEYWORDS = ["Python", "JavaScript", "React", "Flask", "Django", "SQL", "Docker", "Node"]
+
+EMAIL_RE = re.compile(r"\b\S+@\S+\.\S+\b")
+YEAR_RE = re.compile(r"\b(20\d{2}|19\d{2})\b", re.I)
+
+def _clean_lines(text: str) -> List[str]:
     lines = [re.sub(r"\s+", " ", ln).strip() for ln in text.splitlines()]
     return [ln for ln in lines if ln]
 
-def _extract_email(text: str):
+def _extract_email(text: str) -> Optional[str]:
     m = EMAIL_RE.search(text)
     return m.group(0) if m else None
 
-def _extract_urls(text: str):
-    return list({u.rstrip(").,]") for u in URL_RE.findall(text)})
-
-def _extract_phone(text: str):
-    # Try to find the first valid number anywhere in text
+def _extract_phone(text: str) -> Optional[str]:
+    """Return first plausible international-format number."""
     for match in phonenumbers.PhoneNumberMatcher(text, None):
-        num = phonenumbers.format_number(match.number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-        return num
+        try:
+            num = phonenumbers.format_number(
+                match.number, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+            )
+            return num
+        except Exception:
+            continue
     return None
 
-def _guess_name(lines):
-    # Heuristic: first line that looks like "Firstname Lastname"
-    for ln in lines[:8]:  # only look near top
-        if 2 <= len(ln.split()) <= 6 and NAME_RE.match(ln):
-            # avoid lines that are clearly emails/links
-            if EMAIL_RE.search(ln) or URL_RE.search(ln):
-                continue
-            return ln
-    return None
-
-def _extract_education(lines):
-    edu = []
-    for ln in lines:
+def _extract_education(text: str) -> List[Dict]:
+    """Return list of {'text': line, 'years': [years] or None} that look like education."""
+    results: List[Dict] = []
+    for ln in _clean_lines(text):
         low = ln.lower()
         if any(w in low for w in DEGREE_WORDS):
-            # try to pull year range
-            years = re.findall(r"(20\d{2}|19\d{2})", ln)
-            edu.append({"text": ln, "years": years or None})
-    return edu
+            years = YEAR_RE.findall(ln)
+            results.append({"text": ln, "years": years or None})
+    return results
 
-def _extract_experience(lines):
-    exp = []
-    # naive block finder based on keywords + years
-    KEYWORDS = ["experience", "work history", "employment", "professional experience"]
-    # gather lines following a header for a short window
-    capture = False
-    buf = []
-    for ln in lines:
-        low = ln.lower()
-        if any(k in low for k in KEYWORDS):
-            if buf:
-                exp.append(" ".join(buf)); buf = []
-            capture = True
-            continue
-        if capture:
-            if len(buf) > 0 and (ln.strip() == "" or ln.isupper()):
-                exp.append(" ".join(buf)); buf = []; capture = False
-            else:
-                buf.append(ln)
-    if buf: exp.append(" ".join(buf))
-
-    # If nothing captured, fallback: pick lines with a year pattern
-    if not exp:
-        blocks = []
-        block = []
-        for ln in lines:
-            if re.search(r"(20\d{1}|19\d{2})", ln):
-                block.append(ln)
-            elif block:
-                blocks.append(" ".join(block)); block = []
-        if block: blocks.append(" ".join(block))
-        exp = blocks
-
-    # normalize to simple items
-    out = []
-    for b in exp[:6]:
-        # extract simple date expressions
-        dates = re.findall(r"((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|(20\d{2}|19\d{2}))", b, flags=re.I)
-        out.append({"text": b, "dates": list({d[0] for d in dates}) or None})
-    return out
-
-def _extract_skills(text: str):
+def _extract_skills(text: str) -> List[str]:
     found = []
     low = text.lower()
-    for s in SKILL_BANK:
-        # fuzzy match to catch minor variations
-        score = fuzz.partial_ratio(s, low)
-        if score >= 80:
+    for s in SKILLS_KEYWORDS:
+        if s.lower() in low:
             found.append(s)
-    # dedupe while preserving order
+    # dedupe preserve order
     seen, uniq = set(), []
     for s in found:
         if s not in seen:
             seen.add(s); uniq.append(s)
-    return uniq[:30]
+    return uniq
 
-def extract_info(text: str):
-    lines = _clean_lines(text)
+def _explicit_years_of_exp(text: str) -> Optional[int]:
+    """
+    Find explicit patterns like '5 years', '7+ years'.
+    Returns an int if found, otherwise None.
+    """
+    m = re.search(r"\b(\d+)\+?\s+years?\b", text.lower())
+    if m:
+        try:
+            return int(m.group(1))
+        except Exception:
+            return None
+    return None
+
+def _infer_years_from_earliest(text: str) -> Tuple[Optional[int], Optional[int]]:
+    """
+    Infer experience years from the earliest year seen in the text.
+    Returns (years_of_experience, earliest_year_seen).
+    """
+    # Avoid years inside emails/links interfering
+    clean = EMAIL_RE.sub(" ", text)
+    clean = re.sub(r"https?://\S+", " ", clean)
+    years = [int(y) for y in YEAR_RE.findall(clean)]
+    if not years:
+        return None, None
+    earliest = min(years)
+    from datetime import datetime
+    now = datetime.now().year
+    # Basic sanity window
+    if earliest < 1990 or earliest > now:
+        return None, None
+    return max(0, now - earliest), earliest
+
+def match_job_role(resume_skills: List[str]) -> Tuple[str, Dict[str, int]]:
+    matches: Dict[str, int] = {}
+    resume_set = {s.lower() for s in resume_skills}
+    for role, required in JOB_ROLES.items():
+        req_set = {s.lower() for s in required}
+        overlap = resume_set & req_set
+        score = round(100 * len(overlap) / max(1, len(req_set)))
+        matches[role] = score
+    best_match = max(matches, key=matches.get) if matches else "N/A"
+    return best_match, matches
+
+def extract_info(text: str) -> Dict:
+    doc = nlp(text)
+
+    # Name: first PERSON entity
+    name = next((ent.text for ent in doc.ents if ent.label_ == "PERSON"), None)
+
+    # Email / Phone
     email = _extract_email(text)
     phone = _extract_phone(text)
-    urls = _extract_urls(text)
-    name = _guess_name(lines)
-    education = _extract_education(lines)
-    experience = _extract_experience(lines)
+
+    # Skills (keyword-based; keep simple here)
     skills = _extract_skills(text)
 
-    # Optional: try to parse any date-like strings for "years of experience" guess
-    years = re.findall(r"(20\d{2}|19\d{2})", text)
-    first_year = min(map(int, years)) if years else None
+    # Education
+    education = _extract_education(text)
+
+    # Experience years: explicit > inferred
+    exp_years = _explicit_years_of_exp(text)
+    inferred_years, earliest_year = _infer_years_from_earliest(text)
+    if exp_years is None:
+        exp_years = inferred_years
+
+    # Role match scores
+    best_match, matches = match_job_role(skills)
+
     return {
-        "name": name,
-        "email": email,
-        "phone": phone,
-        "links": urls,
+        "name": name or "Not found",
+        "email": email or "Not found",
+        "phone": phone or "Not found",
         "skills": skills,
-        "education": education,
-        "experience": experience,
-        "earliest_year_seen": first_year
+        "education": education,                  # list of {text, years}
+        "experience_years": exp_years if exp_years is not None else "Not found",
+        "earliest_year_seen": earliest_year,     # may be None
+        "best_match": best_match,
+        "match_scores": matches,
     }

@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import io
-import fitz            # PyMuPDF
-import docx            # python-docx
+import fitz            
+import docx            
 from werkzeug.utils import secure_filename
 from resume_utils import extract_info
 
