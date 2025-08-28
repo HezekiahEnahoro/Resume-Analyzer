@@ -5,7 +5,7 @@ gunicorn>=21.2
 Werkzeug>=3.0
 
 # NLP and parsing
-spacy>=3.7
+spacy>=3.7.5
 phonenumbers>=8.13
 rapidfuzz>=3.9
 regex>=2023.12
