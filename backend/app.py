@@ -5,8 +5,14 @@ import fitz
 import docx            
 from werkzeug.utils import secure_filename
 from resume_utils import extract_info
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 
 app = Flask(__name__)
+
+allowed_origins = os.getenv("ALLOWED_ORIGINS")
 CORS(app)
 
 # --- hardening ---

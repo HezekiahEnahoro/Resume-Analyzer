@@ -26,10 +26,7 @@ function ResumeAnalyzer() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-
-  const API =
-    import.meta.env.VITE_RESUME_API ||
-    "https://resume-analyzer-1-cqyf.onrender.com";
+  const API = import.meta.env.VITE_RESUME_API || "http://127.0.0.1:5000";
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0] || null);
@@ -45,6 +42,7 @@ function ResumeAnalyzer() {
     }
     const formData = new FormData();
     formData.append("file", file); // backend expects "file"
+
     setLoading(true);
     try {
       const { data } = await axios.post(
@@ -79,7 +77,8 @@ function ResumeAnalyzer() {
           accept=".pdf,.docx" /* remove .doc – backend only supports pdf/docx */
           onChange={handleFileChange}
           className="border p-2 rounded"
-          disabled={loading}/>
+          disabled={loading}
+        />
         <button
           type="submit"
           disabled={loading || !file}
