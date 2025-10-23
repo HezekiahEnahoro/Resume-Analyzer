@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "resume-analyzer-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
+    "lucide-react": "^0.546.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

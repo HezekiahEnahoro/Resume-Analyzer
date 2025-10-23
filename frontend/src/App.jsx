@@ -1,16 +1,19 @@
+import React, { useState } from "react";
+import LandingPage from "./components/LandingPage";
 import ResumeAnalyzer from "./components/ResumeAnalyzer";
 
 function App() {
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100p-6">
-      <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold text-blue-600 mb-4">
-          Resume Analyzer
-        </h1>
-        <ResumeAnalyzer />
-      </div>
+    <div className="min-h-screen">
+      {!showAnalyzer ? (
+        <LandingPage onGetStarted={() => setShowAnalyzer(true)} />
+      ) : (
+        <ResumeAnalyzer onBack={() => setShowAnalyzer(false)} />
+      )}
     </div>
   );
 }
 
-export default App
+export default App;

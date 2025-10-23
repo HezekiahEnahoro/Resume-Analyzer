@@ -30,3 +30,9 @@ frontend/*.njsproj
 frontend/*.sln
 frontend/*.sw?
 
+venv/
+node_modules/
+.env
+*.pyc
+__pycache__/
+.DS_Store
