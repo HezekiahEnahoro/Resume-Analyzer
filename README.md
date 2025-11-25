@@ -7,7 +7,7 @@
 ## 🔗 Quick Access
 | Badge | Link |
 |-------|------|
-| 🌍 Live Demo | [Live App](https://your-frontend.vercel.app) |
+| 🌍 Live Demo | [Live App](https://resume-analyzer-iota-three.vercel.app/) |
 | 🎥 Video Demo | [Watch Here](https://shorturl.at/4f1N8) |
 | 💻 GitHub Repo | [Repo Link](https://github.com/HezekiahEnahoro/Resume-Analyzer) |
 | 📝 Docs | [Documentation](#) |
